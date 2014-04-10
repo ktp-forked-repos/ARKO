@@ -1,0 +1,70 @@
+     1                                  section	.text
+     2                                  global  strrstr
+     3                                  
+     4                                  strrstr:
+     5 00000000 55                      	push	ebp
+     6 00000001 89E5                    	mov	ebp, esp
+     7                                  	
+     8                                  load:	
+     9 00000003 8B4508                  	mov	eax, DWORD [ebp+8]	;adres *txt do eax
+    10 00000006 8B5D0C                  	mov	ebx, DWORD [ebp+12]	;adres *pt do ebx
+    11 00000009 6800000000              	push 0				;gdy nie znajdzie to zero
+    12                                  	
+    13                                  pociagu:
+    14 0000000E 8A10                    	mov dl, BYTE [eax]		;czy znak = 0 = koniec ciagu 
+    15 00000010 80FA00                  	cmp dl, 0			;czy koniec ciagu
+    16                                  
+    17                                  spr1:	
+    18 00000013 8A33                    	mov dh, BYTE [ebx]
+    19 00000015 38F2                    	cmp dl, dh
+    20 00000017 7405                    	jz spr2
+    21 00000019 E90A000000              	jmp next	
+    22                                  
+    23 0000001E 43                      spr2:	inc ebx
+    24 0000001F 40                      	inc eax
+    25 00000020 8A10                    	mov dl, BYTE [eax]
+    26 00000022 8A33                    	mov dh, BYTE [ebx]
+    27 00000024 38F2                    	cmp dl, dh
+    28 00000026 7404                    	jz found
+    29                                  
+    30 00000028 4B                      next:	dec ebx 
+    31 00000029 40                      	inc eax
+    32 0000002A EBE2                    	jmp pociagu
+    33                                  
+    34 0000002C 4B                      found:	dec ebx
+    35 0000002D 59                      	pop ecx
+    36 0000002E 50                      	push eax
+    37 0000002F EBF7                    	jmp next
+    38                                  			
+    39 00000031 58                      end:	pop eax
+    40 00000032 5D                      	pop	ebp
+    41 00000033 C3                      	ret
+    42                                  
+    43                                  ;============================================
+    44                                  ; STOS
+    45                                  ;============================================
+    46                                  ;
+    47                                  ; wieksze adresy
+    48                                  ; 
+    49                                  ;  |                             |
+    50                                  ;  | ...                         |
+    51                                  ;  -------------------------------
+    52                                  ;  | parametr funkcji - char *pt | EBP+12
+    53                                  ;  -------------------------------
+    54                                  ;  | parametr funkcji - char *txt| EBP+8
+    55                                  ;  -------------------------------
+    56                                  ;  | adres powrotu               | EBP+4
+    57                                  ;  -------------------------------
+    58                                  ;  | zachowane ebp               | EBP, ESP
+    59                                  ;  -------------------------------
+    60                                  ;  | ... tu ew. zmienne lokalne  | EBP-x
+    61                                  ;  |                             |
+    62                                  ;
+    63                                  ; \/                         \/
+    64                                  ; \/ w ta strone rosnie stos \/
+    65                                  ; \/                         \/
+    66                                  ;
+    67                                  ; mniejsze adresy
+    68                                  ;
+    69                                  ;
+    70                                  ;============================================

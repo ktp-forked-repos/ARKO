@@ -1,0 +1,238 @@
+     1                                  ;===============================================================
+     2                                  ;
+     3                                  ; imgInfo* copyrect(imgInfo* pImg, Rect* pSrc, Point* pDst);
+     4                                  ;
+     5                                  ;===============================================================
+     6                                  ; STOS
+     7                                  ;===============================================================
+     8                                  ;
+     9                                  ; wieksze adresy
+    10                                  ; 
+    11                                  ;  |                             |
+    12                                  ;  | ...                         |
+    13                                  ;  -------------------------------
+    14                                  ;  | Point* pDst  		 | EBP+16
+    15                                  ;  -------------------------------
+    16                                  ;  | Rect* pSrc  		 | EBP+12
+    17                                  ;  -------------------------------
+    18                                  ;  | imgInfo* pImg  		 | EBP+8
+    19                                  ;  -------------------------------
+    20                                  ;  | adres powrotu               | EBP+4
+    21                                  ;  -------------------------------
+    22                                  ;  | zachowane ebp               | EBP, ESP
+    23                                  ;  -------------------------------
+    24                                  ;  | ... tu ew. zmienne lokalne  | EBP-x
+    25                                  ;  |                             |
+    26                                  ;
+    27                                  ; \/                         \/
+    28                                  ; \/ w te strone rosnie stos \/
+    29                                  ; \/                         \/
+    30                                  ;
+    31                                  ; mniejsze adresy
+    32                                  ;
+    33                                  ;
+    34                                  ;===============================================================
+    35                                  
+    36                                  						%define pImg EBP+8
+    37                                  						%define pSrc EBP+12
+    38                                  						%define pDst EBP+16
+    39                                  
+    40                                  ;TODO
+    41                                  	;wyjscie za obrazek
+    42                                  	;wzorzec nie na poczatku bajtu
+    43                                  ;TODO
+    44                                  
+    45                                  section	.text
+    46                                  
+    47                                  global  copyrect
+    48                                  
+    49                                  extern printf
+    50                                  
+    51                                  copyrect: 
+    52 00000000 55                      	push ebp
+    53 00000001 89E5                    	mov ebp, esp
+    54                                  
+    55                                  read_store_dim:	
+    56 00000003 8B4D0C                  	mov ecx, [pSrc] 		;ecx=pSrc
+    57 00000006 8B01                    	mov eax, [ecx]			;eax=xp
+    58 00000008 8B4908                  	mov ecx, [ecx+8]		;ecx=xk
+    59 0000000B 29C1                    	sub ecx, eax			;ecx=xk-xp
+    60 0000000D 81C101000000            	add ecx, 1			;xk-xp+1
+    61 00000013 51                      	push ecx			;ebp-4=width
+    62                                  						%define width EBP-4
+    63                                  	
+    64 00000014 8B4D0C                  	mov ecx, [pSrc] 		;ecx=pSrc
+    65 00000017 8B4104                  	mov eax, [ecx+4]		;eax=yp
+    66 0000001A 50                      	push eax				
+    67                                  						%define y1 EBP-8
+    68 0000001B 8B490C                  	mov ecx, [ecx+12]		;ecx=yk
+    69 0000001E 51                      	push ecx				
+    70                                  						%define y2 EBP-12
+    71 0000001F 29C1                    	sub ecx, eax			;ecx=yk-yp
+    72 00000021 81C101000000            	add ecx, 1			;yk-yp+1	
+    73 00000027 51                      	push ecx			;ebp-8=height
+    74                                  						%define height EBP-16
+    75                                  	
+    76 00000028 8B4508                  	mov eax, [pImg]			;eax=pImg
+    77 0000002B 8B00                    	mov eax, [eax]			;eax=pImg->width
+    78 0000002D 051F000000              	add eax, 31			;eax+31
+    79 00000032 C1E805                  	shr eax, 5			;eax>>5
+    80 00000035 C1E002                  	shl eax, 2			;eax<<2
+    81 00000038 50                      	push eax			;ebp-12=lineBytes
+    82                                  						%define lineBytes EBP-20
+    83 00000039 F765F0                  	mul dword [height]
+    84 0000003C 2B45EC                  	sub eax, [lineBytes]
+    85 0000003F 50                      	push eax
+    86                                  						%define multiline EBP-24
+    87                                  	
+    88 00000040 8B4510                  	mov eax, [pDst]			;eax=pDst
+    89 00000043 8B08                    	mov ecx, [eax]			;ecx=x
+    90 00000045 51                      	push ecx
+    91                                  						%define x EBP-28
+    92 00000046 C1E903                  	shr ecx, 3			;x>>3	
+    93 00000049 8B4004                  	mov eax, [eax+4]		;eax=y
+    94 0000004C 50                      	push eax
+    95                                  						%define y EBP-32
+    96                                  
+    97 0000004D F765EC                  	mul dword [lineBytes]		;eax=lineBytes*y
+    98 00000050 01C8                    	add eax, ecx			;eax=mod_y+mod_x
+    99 00000052 50                      	push eax			;ebp-16=delta_dst /number of bytes from 0.0 to x.y of destination/
+   100                                  						%define delta_dst EBP-36
+   101                                  
+   102 00000053 8B4D0C                  	mov ecx, [pSrc]			;ecx=pSrc
+   103 00000056 8B4104                  	mov eax, [ecx+4]		;eax=yp
+   104 00000059 8B09                    	mov ecx, [ecx]			;ecx=xp
+   105 0000005B C1E903                  	shr ecx, 3			;xp>>3
+   106 0000005E F765EC                  	mul dword [lineBytes]		;eax=mod_y
+   107 00000061 01C8                    	add eax, ecx			;eax=mod_y+mod_x
+   108 00000063 50                      	push eax			;ebp-20=delta_src /number of bytes form 0.0 to source's x.y/
+   109                                  						%define delta_src EBP-40
+   110                                  	
+   111 00000064 8B4508                  begin:	mov eax, [pImg]			;eax=pImg 
+   112 00000067 8B5808                  	mov ebx, [eax+8]		;ebx=pointer to first bit of img
+   113 0000006A 89D8                    	mov eax, ebx			;eax=pointer to first bit of img
+   114 0000006C 0345DC                  	add eax, [delta_dst]		;eax points to first bit of destination
+   115 0000006F 035DD8                  	add ebx, [delta_src]		;ebx points to first bit of source
+   116                                  
+   117 00000072 8B4DE0                  mov ecx, dword [y]
+   118                                  
+   119 00000075 3B4DF8                  spr1:	cmp ecx, dword [y1]
+   120 00000078 7F05                    	jg spr2
+   121 0000007A E913000000              	jmp dk
+   122                                  
+   123 0000007F 3B4DF4                  spr2:	cmp ecx, dword [y2]
+   124 00000082 7C05                    	jl f_btm
+   125 00000084 E909000000              	jmp dk
+   126                                  
+   127 00000089 0345E8                  f_btm: 	add eax, [multiline]
+   128 0000008C 035DE8                  	add ebx, [multiline]
+   129 0000008F F75DEC                  	neg dword [lineBytes]
+   130                                  
+   131 00000092 8B4DE4                  dk:	mov ecx, dword [x]		;x%8 gives another shift
+   132 00000095 C1E11B                  	shl ecx, 27
+   133 00000098 C1E91B                  	shr ecx, 27
+   134 0000009B 51                      	push ecx
+   135                                  						%define modulo EBP-44
+   136 0000009C 6800000000              	push dword 0				
+   137                                  						%define modulo2 EBP-48
+   138                                  
+   139 000000A1 817DF000000000          loopy:	cmp [height], dword 0		;if ecx==0
+   140 000000A8 7477                    	je end				;jump to end
+   141                                  	
+   142 000000AA BAFFFFFFFF              	mov edx, 0xffffffff		;edx=111...111	
+   143 000000AF 8B4DFC                  	mov ecx, dword [width]
+   144                                  	
+   145 000000B2 81F900000000            shift1:	cmp ecx, 0			;shift to make a mask
+   146 000000B8 740D                    	je con1
+   147 000000BA 81E901000000            	sub ecx, 1
+   148 000000C0 D1EA                    	shr edx, 1
+   149 000000C2 E9EBFFFFFF              	jmp shift1
+   150                                  
+   151 000000C7 F7D2                    con1:	not edx				;invert all bits
+   152 000000C9 8B4DD4                  	mov ecx, dword [modulo]
+   153 000000CC 014DD0                  	add [modulo2], ecx
+   154                                  						
+   155                                  
+   156 000000CF 81F900000000            shift2: cmp ecx, 0
+   157 000000D5 740D                    	je con2
+   158 000000D7 81E901000000            	sub ecx, 1
+   159 000000DD D1EA                    	shr edx, 1
+   160 000000DF E9EBFFFFFF              	jmp shift2
+   161                                  
+   162 000000E4 0FCA                    con2:	bswap edx			;god bless this function!
+   163 000000E6 F7D2                    	not edx				;negate mask to or it with bits of source
+   164 000000E8 8B0B                    	mov ecx, [ebx]			;bits of source moved to ecx to avoid its change
+   165                                  
+   166 000000EA 0FC9                    	bswap ecx
+   167                                  
+   168 000000EC 817DD000000000          shift3: cmp [modulo2], dword 0		;shift right to fit shift above
+   169 000000F3 740E                    	je con3
+   170 000000F5 816DD001000000          	sub [modulo2], dword 1
+   171 000000FC D1E9                    	shr ecx, 1
+   172 000000FE E9E9FFFFFF              	jmp shift3
+   173                                  
+   174 00000103 0FC9                    con3:	bswap ecx
+   175 00000105 09D1                    	or ecx, edx			;or to get 111...111|source|111...111
+   176 00000107 F7D2                    	not edx				;negate again to get previous form
+   177 00000109 0B10                    	or edx, [eax]			;or mask with destination's bits	
+   178 0000010B 21CA                    	and edx, ecx			;and changed bit with source's bits
+   179 0000010D 8910                    	mov [eax], edx			;move changed bit into right place
+   180                                  
+   181 0000010F 0345EC                  	add eax, [lineBytes]		;next line /dst/
+   182 00000112 035DEC                  	add ebx, [lineBytes]		;next line /src/
+   183 00000115 816DF001000000          	sub [height], dword 1		;iterator--
+   184 0000011C E980FFFFFF              	jmp loopy			
+   185                                  
+   186                                  end:
+   187                                  
+   188                                  ;TEST
+   189 00000121 FF75F0                  push	dword [height]
+   190 00000124 68[00000000]            push	dword pisz	
+   191 00000129 E8(00000000)            call	printf		
+   192 0000012E 81C408000000            add	esp, 2*4	
+   193                                  ;TEST
+   194                                  
+   195                                  
+   196 00000134 817DFC20000000          	cmp [width], dword 32
+   197 0000013B 7E5B                    	jle end2
+   198                                  	
+   199 0000013D 816DFC20000000          	sub [width], dword 32
+   200 00000144 8145E420000000          	add [x], dword 32
+   201                                  	
+   202 0000014B 8145D803000000          	add [delta_src], dword 3
+   203 00000152 8145DC03000000          	add [delta_dst], dword 3
+   204 00000159 2B45E8                  	sub eax, [multiline]
+   205 0000015C 2B5DE8                  	sub ebx, [multiline]
+   206 0000015F F75DEC                  	neg dword [lineBytes]
+   207 00000162 8B4D0C                  	mov ecx, [pSrc] 		;ecx=pSrc
+   208 00000165 8B4104                  	mov eax, [ecx+4]		;eax=yp
+   209 00000168 8B490C                  	mov ecx, [ecx+12]		;ecx=yk
+   210 0000016B 29C1                    	sub ecx, eax			;ecx=yk-yp
+   211 0000016D 81C101000000            	add ecx, 1			;yk-yp+1	
+   212                                  
+   213 00000173 894DF0                  	mov [height], dword ecx
+   214                                  
+   215 00000176 3B4DF8                  spr1a:	cmp ecx, dword [y1]
+   216 00000179 7F05                    	jg spr2a
+   217 0000017B E913000000              	jmp dka
+   218                                  
+   219 00000180 3B4DF4                  spr2a:	cmp ecx, dword [y2]
+   220 00000183 7C05                    	jl f_btma
+   221 00000185 E909000000              	jmp dka
+   222                                  
+   223 0000018A 2B45E8                  f_btma: sub eax, [multiline]
+   224 0000018D 2B5DE8                  	sub ebx, [multiline]
+   225 00000190 F75DEC                  	neg dword [lineBytes]
+   226                                  
+   227                                  
+   228                                  
+   229 00000193 E9CCFEFFFF              dka:	jmp begin
+   230                                  
+   231                                  
+   232 00000198 C9                      end2:	leave 				;mov esp, ebp
+   233                                  					;pop ebp
+   234 00000199 C3                      	ret
+   235                                  
+   236                                  section .data
+   237                                  
+   238 00000000 25640A00                pisz: db "%d", 10, 0
